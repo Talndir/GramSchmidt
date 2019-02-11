@@ -1,25 +1,22 @@
 #pragma once
 
-#include <vector>
+#include "vector.h"
 
-template <typename T>
 class Matrix
 {
 public:
-	Matrix(int x, int y);
-	T& operator[](const int index);
+	Matrix(int m, int n);
+	Matrix(std::vector<Vector> vs);
+	Matrix(std::vector<std::vector<double>> vs);
+	Vector operator[](const int k) const;
+	Vector& operator[](const int k);
+	Vector operator*(Vector& vec);
+	int getRows() const;
+	int getCols() const;
+
+	friend std::ostream& operator<<(std::ostream &out, const Matrix &mat);
 
 private:
-	std::vector<std::vector<T>> matrix;
+	int m, n;
+	std::vector<Vector> matrix;
 };
-
-template<typename T>
-inline Matrix<T>::Matrix(int x, int y)
-{
-}
-
-template<typename T>
-inline T & Matrix<T>::operator[](const int index)
-{
-	return matrix.at(index);
-}
