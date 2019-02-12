@@ -9,27 +9,28 @@ Matrix::Matrix(int m, int n)
 	this->matrix = std::vector<Vector>(m, Vector(n));
 }
 
-Matrix::Matrix(std::vector<Vector> vs)
+Matrix::Matrix(std::vector<Vector>& vs)
 {
-	n = 0;
-	if (vs.size())
-		n = vs.at(0).getLength();
+	n = vs.size();
+	if (n)
+		m = vs.at(0).getLength();
 	else
-		matrix = std::vector<Vector>(0, Vector(0));
-
-	for (int i = 0; i < vs.size(); ++i)
 	{
-		if (vs.at(i).getLength() != n)
+		matrix = std::vector<Vector>(0, Vector(0));
+		m = 0;
+	}
+
+	for (int i = 0; i < n; ++i)
+	{
+		if (vs.at(i).getLength() != m)
 		{
 			matrix = std::vector<Vector>(0, Vector(0));
-			n = m = 0;
+			m = n = 0;
 			return;
 		}
 
 		matrix.push_back(vs.at(i));
 	}
-
-	m = vs.size();
 }
 
 Vector Matrix::operator[](const int k) const
@@ -44,10 +45,10 @@ Vector& Matrix::operator[](const int k)
 
 Vector Matrix::operator*(Vector& vec)
 {
-	if (n != vec.getLength())
+	if (m != vec.getLength())
 		return Vector(0);
 
-	Vector r(n);
+	Vector r(m);
 	for (int i = 0; i < n; ++i)
 		r[i] = vec * matrix[i];
 
@@ -64,9 +65,26 @@ int Matrix::getCols() const
 	return n;
 }
 
+Matrix Matrix::transpose() const
+{
+	std::vector<double> v;
+	std::vector<Vector> vs;
+
+	for (int i = 0; i < m; ++i)
+	{
+		for (int j = 0; j < n; ++j)
+			v.push_back((*this)[j][i]);
+		vs.push_back(v);
+		v.clear();
+	}
+
+	return Matrix(vs);
+}
+
 std::ostream& operator<<(std::ostream &out, const Matrix &mat)
 {
-	for (int i = 0; i < mat.getRows(); ++i)
+	Matrix m = mat.transpose();
+	for (int i = 0; i < m.getCols(); ++i)
 		out << mat[i] << std::endl;
 	return out;
 }

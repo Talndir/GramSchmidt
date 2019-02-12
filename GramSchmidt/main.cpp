@@ -3,8 +3,8 @@
 #include "vector.h"
 #include "matrix.h"
 
-std::vector<Vector> cgs(std::vector<Vector>& as);
-std::vector<Vector> mgs(std::vector<Vector>& as);
+bool cgs(std::vector<Vector>& as, Matrix& q, Matrix& r);
+bool mgs(std::vector<Vector>& as, Matrix& q, Matrix& r);
 
 void printVecs(std::vector<Vector>& vs);
 
@@ -16,12 +16,16 @@ int main()
 	Vector v2(std::vector<double>{2, 2});
 	std::vector<Vector> t = { v1, v2 };
 
-	std::vector<Vector> vs = cgs(t);
-	std::vector<Vector> qs = mgs(t);
-	printVecs(vs);
-	std::cout << std::endl;
-	printVecs(qs);
+	Matrix q1(0, 0), r1(0, 0), q2(0, 0), r2(0, 0);
+	bool c = cgs(t, q1, r1);
+	bool m = mgs(t, q2, r2);
 
+	if (!c)
+		std::cout << "CGS failure" << std::endl;
+	if (!m)
+		std::cout << "MGS failure" << std::endl;
+
+	std::cout << q1 << std::endl << q2 << std::endl;
 	std::cin.ignore();
 
 	return 0;
@@ -33,13 +37,15 @@ void printVecs(std::vector<Vector>& vs)
 		std::cout << vs.at(i) << std::endl;
 }
 
-std::vector<Vector> cgs(std::vector<Vector>& as)
+bool cgs(std::vector<Vector>& as, Matrix& q, Matrix& r)
 {
 	int n = as.size();
 	if (!n)
-		return std::vector<Vector>(0, Vector(0));
+		return false;	// No vectors
 
 	int m = as.at(0).getLength();
+	if (m < n)
+		return false;	// Cannot all be linearly independent
 
 	std::vector<Vector> qs;
 
@@ -51,14 +57,18 @@ std::vector<Vector> cgs(std::vector<Vector>& as)
 		qs.push_back(t.norm());
 	}
 	
-	return qs;
+	q = Matrix(qs);
+	return true;
 }
 
-std::vector<Vector> mgs(std::vector<Vector>& as)
+bool mgs(std::vector<Vector>& as, Matrix& q, Matrix& r)
 {
 	int n = as.size();
 	if (!n)
-		return std::vector<Vector>(0, Vector(0));
+		return false;	// No vectors
+	
+	if (as.at(0).getLength() < n)
+		return false;	// Cannot all be linearly independent
 
 	std::vector<Vector> vs(as);
 	std::vector<Vector> qs;
@@ -71,5 +81,6 @@ std::vector<Vector> mgs(std::vector<Vector>& as)
 			vs.at(j) -= qs.at(i) * (vs.at(j) * qs.at(i));
 	}
 
-	return qs;
+	q = Matrix(qs);
+	return true;
 }
