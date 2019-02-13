@@ -72,6 +72,15 @@ Vector Vector::operator*(const double & c) const
 	return r;
 }
 
+Vector Vector::operator/(const double & c) const
+{
+	Vector r(m);
+	for (int i = 0; i < m; ++i)
+		r[i] = (*this)[i] / c;
+
+	return r;
+}
+
 int Vector::getLength() const
 {
 	return m;
@@ -105,7 +114,7 @@ std::string dtos(double d, int b, int a)
 	else
 		s += " ";
 
-	str << std::setprecision(20) << d;
+	str << std::setprecision(a + 2) << std::fixed << d;
 
 	x = str.str();
 	str.str("");
@@ -119,7 +128,12 @@ std::string dtos(double d, int b, int a)
 
 	p = x.substr(0, t);
 	q = x.substr(t, std::string::npos);
-	str << std::string(b - t, '0') << p << q << std::string(a, '0');
+	// For some reason, VS2017 doesn't compile this correctly unless
+	// b - t is precomputed into a variable (!?)
+	int k = b - t;
+	if (k > 0)
+		str << std::string(k, '0');
+	str << p << q << std::string(a, '0');
 	s += str.str();
 	return s.substr(0, a + b + 2);
 

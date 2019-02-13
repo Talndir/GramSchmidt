@@ -1,22 +1,38 @@
 #include <iostream>
 #include <iomanip>
+#include <string>
 
 #include "vector.h"
 #include "matrix.h"
 
 bool cgs(std::vector<Vector>& as, Matrix& q, Matrix& r);
 bool mgs(std::vector<Vector>& as, Matrix& q, Matrix& r);
-bool solve(Matrix& a, Vector& x, Vector& b);
+bool solve(Matrix& a, Vector& b, Vector& xc, Vector& xm);
 
 void printVecs(std::vector<Vector>& vs);
 Matrix identity(int n);
 
+void run(double k);
+
 int main()
 {
-	std::cout.precision(20);
+	run(0.1);
+	run(0.00001);
+	run(0.0000000001);
+
+	return 0;
+}
+
+void run(double k)
+{
+	std::cout.precision(17);
 	std::cout << std::fixed;
 
-	const double k = 0.1;
+	std::cout <<
+		std::string(91, '=') << std::endl <<
+		"k = " << k << std::endl <<
+		std::string(91, '=') << std::endl << std::endl;
+
 	std::vector<Vector> t =
 	{	Vector({-2.0, k,   0.0, 0.0}),
 		Vector({-1.0, 0.0, k,   0.0}),
@@ -46,16 +62,17 @@ int main()
 		r2 << std::endl <<
 		q2 * q2.transpose() - id << std::endl;
 
-	Vector x(0), b({1.0, 1.0, 1.0, 1.0});
-	solve(a, x, b);
-	std::cout << 
+	Vector xc(0), xm(0), b({1.0, 1.0, 1.0, 1.0});
+	solve(a, b, xc, xm);
+	std::cout <<
 		"A" << std::endl << a << std::endl <<
-		"x" << std::endl << x << std::endl <<
-		"b" << std::endl << b << std::endl;
+		"b" << std::endl << b << std::endl << std::endl <<
+		"x (CGS)" << std::endl << xc << std::endl << std::endl <<
+		"x (MGS)" << std::endl << xm << std::endl << std::endl <<
+		"r (CGS) = " << (b - a * xc).norm() << std::endl <<
+		"r (MGS) = " << (b - a * xm).norm() << std::endl << std::endl;
 
 	std::cin.ignore();
-
-	return 0;
 }
 
 void printVecs(std::vector<Vector>& vs)
@@ -83,27 +100,26 @@ bool cgs(std::vector<Vector>& as, Matrix& q, Matrix& r)
 	if (m < n)
 		return false;	// Cannot all be linearly independent
 
-	std::vector<Vector> qs, rs;
-	std::vector<double> v(m, 0.0);
+	q = r = Matrix(m, n);
+	Vector v(m), t(m);
 
 	double s;
 
 	for (int i = 0; i < n; ++i)
 	{
-		Vector t = as.at(i);
+		t = as.at(i);
 		for (int j = 0; j < i; ++j)
 		{
-			s = as.at(i) * qs.at(j);
-			v.at(j) = s;
-			t -= qs.at(j) * s;
+			s = as.at(i) * q[j];
+			v[j] = s;
+			t -= q[j] * s;
 		}
-		v.at(i) = t.norm();
-		qs.push_back(t.normalise());
-		rs.push_back(v);
+		v[i] = t.norm();
+		q[i] = t.normalise();
+		r[i] = v;
+		v = Vector(m);
 	}
 	
-	q = Matrix(qs);
-	r = Matrix(rs);
 	return true;
 }
 
@@ -117,51 +133,55 @@ bool mgs(std::vector<Vector>& as, Matrix& q, Matrix& r)
 	if (m < n)
 		return false;	// Cannot all be linearly independent
 
-	std::vector<Vector> vs(as), rs, qs;
-	std::vector<double> v(m, 0.0);
+	Matrix vs(as);
+	q = Matrix(as);
+	r = Matrix(m, n);
 
 	double s;
 
 	for (int i = 0; i < n; ++i)
 	{
-		qs.push_back(vs.at(i).normalise());
-		v.at(i) = vs.at(i).norm();
+		s = vs[i].norm();
+		r[i][i] = s;
+		q[i] = vs[i] / s;
 
 		for (int j = i + 1; j < n; ++j)
 		{
-			s = vs.at(j) * qs.at(i);
-			v.at(j) = s;
-			vs.at(j) -= qs.at(i) * s;
+			s = vs[j] * q[i];
+			r[j][i] = s;
+			vs[j] -= q[i] * s;
 		}
-		rs.push_back(v);
-		v.assign(m, 0.0);
 	}
 
-	q = Matrix(qs);
-	r = Matrix(rs).transpose();
 	return true;
 }
 
-bool solve(Matrix& a, Vector& x, Vector& b)
+bool solve(Matrix& a, Vector& b, Vector& xc, Vector& xm)
 {
 	int n = a.getCols();
 	int m = a.getRows();
 	if (m != b.getLength())
 		return false;	// Incombatible dimensions
 
-	Matrix q(0, 0), r(0, 0);
+	Matrix qc(0, 0), rc(0, 0), qm(0, 0), rm(0, 0);
 	std::vector<Vector> as = a.asVectors();
-	cgs(as, q, r);
-	Vector v = q.transpose() * b;
+	cgs(as, qc, rc);
+	mgs(as, qm, rm);
+	Vector vc = qc.transpose() * b;
+	Vector vm = qm.transpose() * b;
 
-	x = Vector(n);
+	xc = xm = Vector(n);
 	for (int i = n - 1; i >= 0; --i)
 	{
-		double s = v[i];
+		double s = vc[i];
 		for (int j = n - 1; j > i; --j)
-			s -= r[j][i] * x[j];
+			s -= rc[j][i] * xc[j];
+		xc[i] = s / rc[i][i];
 
-		x[i] = s / r[i][i];
+		s = vm[i];
+		for (int j = n - 1; j > i; --j)
+			s -= rm[j][i] * xm[j];
+		xm[i] = s / rm[i][i];
 	}
 
 	return true;

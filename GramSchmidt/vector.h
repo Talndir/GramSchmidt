@@ -13,6 +13,7 @@ public:
 	Vector operator-(const Vector& v) const;
 	Vector& operator-=(const Vector& v);
 	Vector operator*(const double& c) const;
+	Vector operator/(const double& c) const;
 	int getLength() const;
 	double norm() const;
 	Vector normalise() const;
