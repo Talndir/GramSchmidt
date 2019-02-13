@@ -1,6 +1,8 @@
 #include "vector.h"
 
 #include <string>
+#include <iomanip>
+#include <sstream>
 
 Vector::Vector(int m) : m(m)
 {
@@ -23,7 +25,7 @@ double& Vector::operator[](const int k)
 	return vector.at(k);
 }
 
-double Vector::operator*(const Vector& v)
+double Vector::operator*(const Vector& v) const
 {
 	if (v.getLength() != m)
 		return 0.0;
@@ -35,7 +37,7 @@ double Vector::operator*(const Vector& v)
 	return r;
 }
 
-Vector Vector::operator-(const Vector & v)
+Vector Vector::operator-(const Vector & v) const
 {
 	if (v.getLength() != m)
 		return Vector(0);
@@ -61,7 +63,7 @@ Vector& Vector::operator-=(const Vector & v)
 	return *this;
 }
 
-Vector Vector::operator*(const double & c)
+Vector Vector::operator*(const double & c) const
 {
 	Vector r(m);
 	for (int i = 0; i < m; ++i)
@@ -75,10 +77,15 @@ int Vector::getLength() const
 	return m;
 }
 
-Vector Vector::norm()
+double Vector::norm() const
+{
+	return sqrt((*this) * (*this));
+}
+
+Vector Vector::normalise() const
 {
 	Vector v(m);
-	double t = sqrt((*this) * (*this));
+	double t = norm();
 
 	for (int i = 0; i < vector.size(); ++i)
 		v[i] = (*this)[i] / t;
@@ -86,9 +93,42 @@ Vector Vector::norm()
 	return v;
 }
 
+std::string dtos(double d, int b, int a)
+{
+	std::string s = "", p, q, x;
+	std::ostringstream str;
+	if (d < 0)
+	{
+		s += "-";
+		d *= -1;
+	}
+	else
+		s += " ";
+
+	str << std::setprecision(20) << d;
+
+	x = str.str();
+	str.str("");
+
+	size_t t = x.find('.');
+	if (t == std::string::npos)
+	{
+		x += ".0";
+		t = x.length() - 2;
+	}
+
+	p = x.substr(0, t);
+	q = x.substr(t, std::string::npos);
+	str << std::string(b - t, '0') << p << q << std::string(a, '0');
+	s += str.str();
+	return s.substr(0, a + b + 2);
+
+}
+
 std::ostream& operator<<(std::ostream & out, const Vector& vec)
 {
 	for (int i = 0; i < vec.getLength(); ++i)
-		out << vec[i] << " ";
+		out << dtos(vec[i], 3, 17) << " ";
+
 	return out;
 }

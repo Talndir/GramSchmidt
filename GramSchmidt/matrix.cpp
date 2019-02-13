@@ -43,14 +43,44 @@ Vector& Matrix::operator[](const int k)
 	return matrix[k];
 }
 
-Vector Matrix::operator*(Vector& vec)
+Vector Matrix::operator*(Vector& vec) const
 {
 	if (m != vec.getLength())
 		return Vector(0);
 
 	Vector r(m);
+	Matrix t = transpose();
 	for (int i = 0; i < n; ++i)
-		r[i] = vec * matrix[i];
+		r[i] = vec * t[i];
+
+	return r;
+}
+
+Matrix Matrix::operator*(const Matrix& mat) const
+{
+	if (mat.getRows() != n || mat.getCols() != m)
+		return Matrix(0, 0);
+
+	Matrix t = transpose();
+	std::vector<Vector> vs;
+	std::vector<double> v;
+	
+	for (int i = 0; i < m; ++i)
+	{
+		for (int j = 0; j < n; ++j)
+			v.push_back(t[j] * mat[i]);
+		vs.push_back(v);
+		v.clear();
+	}
+
+	return Matrix(vs);
+}
+
+Matrix Matrix::operator-(Matrix& mat) const
+{
+	Matrix r(*this);
+	for (int i = 0; i < m; ++i)
+		r[i] -= mat[i];
 
 	return r;
 }
@@ -81,10 +111,15 @@ Matrix Matrix::transpose() const
 	return Matrix(vs);
 }
 
+std::vector<Vector> Matrix::asVectors()
+{
+	return matrix;
+}
+
 std::ostream& operator<<(std::ostream &out, const Matrix &mat)
 {
 	Matrix m = mat.transpose();
 	for (int i = 0; i < m.getCols(); ++i)
-		out << mat[i] << std::endl;
+		out << m[i] << std::endl;
 	return out;
 }
