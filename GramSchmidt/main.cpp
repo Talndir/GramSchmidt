@@ -1,6 +1,7 @@
 #include <iostream>
 #include <iomanip>
 #include <string>
+#include <fstream>
 
 #include "vector.h"
 #include "matrix.h"
@@ -9,26 +10,28 @@ bool cgs(std::vector<Vector>& as, Matrix& q, Matrix& r);
 bool mgs(std::vector<Vector>& as, Matrix& q, Matrix& r);
 bool solve(Matrix& a, Vector& b, Vector& xc, Vector& xm);
 
-void printVecs(std::vector<Vector>& vs);
 Matrix identity(int n);
 
-void run(double k);
+void run(double k, std::ostream& out);
 
 int main()
 {
-	run(0.1);
-	run(0.00001);
-	run(0.0000000001);
+	std::ofstream outfile;
+	outfile.open("out.txt", std::ofstream::out | std::ofstream::trunc);
+
+	run(0.1, outfile);
+	run(0.00001, outfile);
+	run(0.0000000001, outfile);
 
 	return 0;
 }
 
-void run(double k)
+void run(double k, std::ostream& out)
 {
-	std::cout.precision(17);
-	std::cout << std::fixed;
+	out.precision(17);
+	out << std::fixed;
 
-	std::cout <<
+	out <<
 		std::string(91, '=') << std::endl <<
 		"k = " << k << std::endl <<
 		std::string(91, '=') << std::endl << std::endl;
@@ -47,11 +50,11 @@ void run(double k)
 	bool m = mgs(t, q2, r2);
 
 	if (!c)
-		std::cout << "CGS failure" << std::endl;
+		out << "CGS failure" << std::endl;
 	if (!m)
-		std::cout << "MGS failure" << std::endl;
+		out << "MGS failure" << std::endl;
 
-	std::cout <<
+	out <<
 		"A" << std::endl << a << std::endl << std::endl <<
 		"CGS: Q, R, Q*QT - I:" << std::endl <<
 		q1 << std::endl << 
@@ -63,22 +66,18 @@ void run(double k)
 		q2 * q2.transpose() - id << std::endl;
 
 	Vector xc(0), xm(0), b({1.0, 1.0, 1.0, 1.0});
-	solve(a, b, xc, xm);
-	std::cout <<
+	bool s = solve(a, b, xc, xm);
+
+	if (!s)
+		out << "Solve failure" << std::endl;
+
+	out <<
 		"A" << std::endl << a << std::endl <<
 		"b" << std::endl << b << std::endl << std::endl <<
 		"x (CGS)" << std::endl << xc << std::endl << std::endl <<
 		"x (MGS)" << std::endl << xm << std::endl << std::endl <<
 		"r (CGS) = " << (b - a * xc).norm() << std::endl <<
 		"r (MGS) = " << (b - a * xm).norm() << std::endl << std::endl;
-
-	std::cin.ignore();
-}
-
-void printVecs(std::vector<Vector>& vs)
-{
-	for (int i = 0; i < vs.size(); ++i)
-		std::cout << vs.at(i) << std::endl;
 }
 
 Matrix identity(int n)
